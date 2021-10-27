@@ -1,6 +1,8 @@
 from torch.utils.data import Dataset, DataLoader, random_split
+import torch
 from torchvision import transforms
 import numpy as np
+
 
 class LSTDataset(Dataset):
     def __init__(self, image_path, target_path, transform=None):
@@ -20,6 +22,7 @@ class LSTDataset(Dataset):
     def __len__(self):
         return len(self.data)
 
+
 class LSTDataLoader():
     def __init__(self, image_path, target_path, image_transformations=None, train_test_split=0.9, batch_size=32):
         if image_transformations is None:
@@ -31,7 +34,6 @@ class LSTDataLoader():
         train_len = int(len(dataset.data) * train_test_split)
         self.train_set, self.test_set = random_split(dataset, [train_len, len(dataset.data) - train_len])
 
-
     def build_loaders(self):
         train_dataloader = DataLoader(self.train_set, batch_size=self.batch_size, shuffle=True)
         test_dataloader = DataLoader(self.test_set, batch_size=self.batch_size, shuffle=False)
@@ -39,10 +41,6 @@ class LSTDataLoader():
         return train_dataloader, test_dataloader
 
 
-
-
-
 if __name__ == "__main__":
     train_dataloader, test_dataloader = LSTDataLoader("../image_data.npy", "../LST_labels.npy").build_loaders()
     print(len(train_dataloader))
-

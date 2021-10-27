@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import os
 
 class TFRecordsParser:
     """
@@ -41,7 +42,17 @@ class TFRecordsParser:
         """
         return tf.io.parse_single_example(input_dataset, self.image_feature_description)
 
-    def tfrecrods2numpy(self, clip=True):
+    def tfrecrods2numpy(self, clip=True, save=False, images_path=None, labels_path=None):
+        if save:
+            try:
+                assert images_path is not None
+                assert labels_path is not None
+                images_path = os.path.join(images_path, "images.npy")
+                labels_path = os.path.join(labels_path, "labels.npy")
+            except:
+                print("To save data, input path to storage location")
+                exit()
+
         parsed_image_dataset = self.raw_image_dataset.map(self._parse_image_function)
 
         # Calculate total images in tensorflow dataset
@@ -52,8 +63,8 @@ class TFRecordsParser:
         # Loop through parsed images and store training data and labels
         index = 0
         num_channels = len(self.channels)
-        training_data = np.zeros((total_images, num_channels) + self.image_dim)
-        labels = np.zeros((total_images))
+        training_data = np.zeros((total_images, num_channels) + self.image_dim, dtype=np.float32)
+        labels = np.zeros((total_images), dtype=np.float32)
 
         for data in parsed_image_dataset:
             # Create list to store channel data
@@ -66,9 +77,11 @@ class TFRecordsParser:
             image = np.array(channel_data)
             # Reshape to image dimensions
             image = image.reshape((-1, ) + self.image_dim)
+            image = image.astype(np.float32)
 
             # Pull label
             label = data[self.label]
+            label = label
 
             # Clip data to [0,1] if true
             if clip is True:
@@ -79,9 +92,16 @@ class TFRecordsParser:
 
             index += 1
 
+        labels = labels.reshape(-1, 1).astype(np.float32)
 
+        if save:
+            np.save(images_path, training_data)
+            np.save(labels_path, labels)
+
+        training_data, labels = training_data.astype(np.float32), labels.astype(np.float32)
         return training_data, labels
 
 
-
-
+if __name__ == "__main__":
+    tfdata = TFRecordsParser("../file.tfrecord")
+    tfdata.tfrecrods2numpy(save=True, images_path="data/", labels_path="data/")

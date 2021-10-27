@@ -11,12 +11,12 @@ class VGG11Net(nn.Module):
         self.input_shape = input_shape
 
         self.conv1 = nn.Conv2d(in_channels=self.in_channels, out_channels=64, kernel_size=(3,3), padding="same")
-        self.mp1 = nn.MaxPool2d(kernel_size=(2,2), stride=1)
+        self.mp1 = nn.MaxPool2d(kernel_size=(2,2), stride=2)
         self.conv2 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=(3,3), padding="same")
-        self.mp2 = nn.MaxPool2d(kernel_size=(2, 2), stride=1)
+        self.mp2 = nn.MaxPool2d(kernel_size=(2, 2), stride=2)
         self.conv3 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=(3,3), padding="same")
         self.conv4 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=(3,3), padding="same")
-        self.mp3 = nn.MaxPool2d(kernel_size=(2, 2), stride=1)
+        self.mp3 = nn.MaxPool2d(kernel_size=(2, 2), stride=2)
         self.conv5 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=(3,3), padding="same")
         self.conv6 = nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3, 3), padding="same")
         self.mp4 = nn.MaxPool2d(kernel_size=(2, 2), stride=1)
@@ -26,14 +26,15 @@ class VGG11Net(nn.Module):
 
         self.flatten_shape = None
         zero_ex = torch.zeros(input_shape).unsqueeze(0)
+
         with torch.no_grad():
             self.convolutions(zero_ex)
 
-        self.fc1 = nn.Linear(in_features=self.flatten_shape, out_features=4096)
+        self.fc1 = nn.Linear(in_features=self.flatten_shape, out_features=128)
         self.drop1 = nn.Dropout(0.5)
-        self.fc2 = nn.Linear(in_features=4096, out_features=4096)
+        self.fc2 = nn.Linear(in_features=128, out_features=64)
         self.drop2 = nn.Dropout(0.5)
-        self.fc3 = nn.Linear(in_features=4096, out_features=1)
+        self.fc3 = nn.Linear(in_features=64, out_features=1)
 
     def convolutions(self, x):
         x = F.relu(self.conv1(x))
@@ -60,11 +61,15 @@ class VGG11Net(nn.Module):
 
     def forward(self, x):
         x = self.convolutions(x)
+
         x = F.relu(self.fc1(x))
         x = self.drop1(x)
-        x = self.fc2(x)
+        x = F.relu(self.fc2(x))
         x = self.drop2(x)
         x = self.fc3(x)
 
         return x
+
+if __name__ == "__main__":
+    model = VGG11Net(input_shape=(3, 33, 33))
 
