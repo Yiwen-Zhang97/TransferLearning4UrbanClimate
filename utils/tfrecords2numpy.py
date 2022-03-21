@@ -42,3 +42,26 @@ class TFRecordsParser:
 
         return records
 
+
+class TFRecordsElevation:
+    def __init__(self, filepath, channels=None, label=None, image_dim=(33,33)):
+        self.raw_elevation_dataset = tf.data.TFRecordDataset(filepath)
+        self.channels = channels
+        self.image_dim = image_dim
+        self.label = label
+
+        self.channels = "elevation"
+
+    def tfrecrods2numpy(self, clip=True):
+        elevations = {}
+        for idx, raw_record in enumerate(self.raw_elevation_dataset):
+            feature = self.channels
+            example = tf.train.Example()
+            example.ParseFromString(raw_record.numpy())
+            elevations[idx] = np.array(example.features.feature[feature].float_list.value).reshape(self.image_dim)
+
+        return elevations
+
+if __name__ == "__main__":
+    tfe = TFRecordsElevation(filepath="/mnt/sdc2/data/research_data/AWS3D30_cropped.tfrecord")
+    tfe.tfrecrods2numpy()
