@@ -48,7 +48,7 @@ def extract_data():
     avail_dates = list(forcing_data.keys())
 #    avail_dates=forcing_data.time.dt.strftime('%y%m%d').values.tolist()
     avail_dates = [s.replace("20", "").replace("-","") for s in avail_dates]
-    print(len(avail_dates))
+    print(avail_dates)
     
     for root, dirs, files in os.walk(PATH_TO_DATA):
         for file in tqdm(files, desc="Total Progress", position=0):
@@ -70,14 +70,22 @@ def extract_data():
                     NIR_dn = (features[3]+0.2)/2.75e-05
                     SWIR1_dn = (features[4]+0.2)/2.75e-05
                     RED_dn = (features[0]+0.2)/2.75e-05
-#                    if features[4]==-9999 or features[3]==-9999:
-#                        features_ndbi = -9999
-#                    else:
-#                        features_ndbi = ((SWIR1_dn-NIR_dn)/(SWIR1_dn+NIR_dn)).reshape(-1,33,33)
-#                    if features[3]==-9999 or features[0]==-9999:
-#                        features_ndvi = -9999
-#                    else:
-#                        features_ndvi = ((NIR_dn-RED_dn)/(NIR_dn+RED_dn)).reshape(-1,33,33)
+                    # features_ndbi=np.empty([1,33,33])
+                    # features_ndvi=np.empty([1,33,33])
+                    # for index, values in np.ndenumerate(features[4]):
+                    #     values_NIR = features[3][index]
+                    #     if values==-9999 or values_NIR==-9999:
+                    #         features_ndbi[0][index] = -9999
+                    #     else:
+                    #         features_ndbi[0][index] = ((SWIR1_dn[index]-NIR_dn[index])/(SWIR1_dn[index]+NIR_dn[index]))
+                    # features_ndbi=features_ndbi.reshape(-1,33,33)
+                    # for index, values in np.ndenumerate(features[3]):
+                    #     values_Red = features[0][index]
+                    #     if values==-9999 or values_Red==-9999:
+                    #         features_ndvi[0][index] = -9999
+                    #     else:
+                    #         features_ndvi[0][index] = ((NIR_dn[index]-RED_dn[index])/(NIR_dn[index]+RED_dn[index]))
+                    # features_ndvi=features_ndvi.reshape(-1,33,33)
                     features_ndbi = ((SWIR1_dn-NIR_dn)/(SWIR1_dn+NIR_dn)).reshape(-1,33,33)
                     features_ndvi = ((NIR_dn-RED_dn)/(NIR_dn+RED_dn)).reshape(-1,33,33)
                     features = np.concatenate([features,features_ndbi,features_ndvi],axis=0)
