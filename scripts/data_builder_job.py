@@ -13,8 +13,8 @@ import xarray as xr
 #PATH_TO_FORCING = "/glade/work/yiwenz/TransferLearning/CESM_0.125_modis_Daily/CESM_0.125_Daily_all.nc"
 PATH_TO_FORCING = "/glade/work/yiwenz/TransferLearning/forcing_daily.pkl"
 PATH_TO_DATA = "/glade/scratch/yiwenz/Data_TFRecord_Daily/"
-PATH_TO_STORE = "/glade/scratch/yiwenz/TransferLearningData/sharded_data_all_Daily_new/"
-PATH_TO_RAND_STORE = "/glade/scratch/yiwenz/TransferLearningData/rand_sharded_data_all_Daily_new/"
+PATH_TO_STORE = "/glade/scratch/yiwenz/TransferLearningData/sharded_data_all_Daily_dropna/"
+PATH_TO_RAND_STORE = "/glade/scratch/yiwenz/TransferLearningData/rand_sharded_data_all_Daily_dropna/"
 PATH_TO_LATLONG = "/glade/u/home/yiwenz/TransferLearning/modis_lon_lat.csv"
 PATH_TO_ELEVATIONS = "/glade/work/yiwenz/AWS3D30_cropped.tfrecord"
 
@@ -48,7 +48,7 @@ def extract_data():
     avail_dates = list(forcing_data.keys())
 #    avail_dates=forcing_data.time.dt.strftime('%y%m%d').values.tolist()
     avail_dates = [s.replace("20", "").replace("-","") for s in avail_dates]
-    print(avail_dates)
+#    print(avail_dates)
     
     for root, dirs, files in os.walk(PATH_TO_DATA):
         for file in tqdm(files, desc="Total Progress", position=0):
@@ -61,43 +61,43 @@ def extract_data():
             if file_date in avail_dates:
                 for idx, (features, lst) in tqdm(enumerate(records), desc="Storing Files", position=1,
                                                  total=len(records), leave=False):
-                    if outside_weight != 0:
-                        weights = np.array(weights_idx_dict[idx]["weights"]) * outside_weight
-                        min_idx = weights_idx_dict[idx]["idx"]
-                        surround_features = np.array([records[i][0] for i in min_idx])
-                        weighted_avg = np.average(surround_features, weights=weights, axis=0)
-                        features = np.average([features, weighted_avg], weights=[center_weight, outside_weight], axis=0)
-                    NIR_dn = (features[3]+0.2)/2.75e-05
-                    SWIR1_dn = (features[4]+0.2)/2.75e-05
-                    RED_dn = (features[0]+0.2)/2.75e-05
-                    # features_ndbi=np.empty([1,33,33])
-                    # features_ndvi=np.empty([1,33,33])
-                    # for index, values in np.ndenumerate(features[4]):
-                    #     values_NIR = features[3][index]
-                    #     if values==-9999 or values_NIR==-9999:
-                    #         features_ndbi[0][index] = -9999
-                    #     else:
-                    #         features_ndbi[0][index] = ((SWIR1_dn[index]-NIR_dn[index])/(SWIR1_dn[index]+NIR_dn[index]))
-                    # features_ndbi=features_ndbi.reshape(-1,33,33)
-                    # for index, values in np.ndenumerate(features[3]):
-                    #     values_Red = features[0][index]
-                    #     if values==-9999 or values_Red==-9999:
-                    #         features_ndvi[0][index] = -9999
-                    #     else:
-                    #         features_ndvi[0][index] = ((NIR_dn[index]-RED_dn[index])/(NIR_dn[index]+RED_dn[index]))
-                    # features_ndvi=features_ndvi.reshape(-1,33,33)
-                    features_ndbi = ((SWIR1_dn-NIR_dn)/(SWIR1_dn+NIR_dn)).reshape(-1,33,33)
-                    features_ndvi = ((NIR_dn-RED_dn)/(NIR_dn+RED_dn)).reshape(-1,33,33)
-                    features = np.concatenate([features,features_ndbi,features_ndvi],axis=0)
-                    elevations = elevations_dict[idx].reshape(-1,33,33)
-                    # elevations = elevations_dict[idx].clip(0, 500)
-                    # scaler = MinMaxScaler()
-                    # elevations = np.expand_dims(scaler.fit_transform(elevations), axis=0)
-                    features = np.vstack([features, elevations])
-                    forcing = forcing_data[forcing_date][idx]
-#                    date_stamp='20'+file_date[:2]+'-'+file_date[2:4]+'-'+file_date[4:6]
-#                    forcing=forcing_data.sel(time=date_stamp,index=idx).to_array().values      
-                    if lst is not False:
+                    if (lst is not False) and ((features!=-9999).all() == True):
+                        if outside_weight != 0:
+                            weights = np.array(weights_idx_dict[idx]["weights"]) * outside_weight
+                            min_idx = weights_idx_dict[idx]["idx"]
+                            surround_features = np.array([records[i][0] for i in min_idx])
+                            weighted_avg = np.average(surround_features, weights=weights, axis=0)
+                            features = np.average([features, weighted_avg], weights=[center_weight, outside_weight], axis=0)
+                        NIR_dn = (features[3]+0.2)/2.75e-05
+                        SWIR1_dn = (features[4]+0.2)/2.75e-05
+                        RED_dn = (features[0]+0.2)/2.75e-05
+                        # features_ndbi=np.empty([1,33,33])
+                        # features_ndvi=np.empty([1,33,33])
+                        # for index, values in np.ndenumerate(features[4]):
+                        #     values_NIR = features[3][index]
+                        #     if values==-9999 or values_NIR==-9999:
+                        #         features_ndbi[0][index] = -9999
+                        #     else:
+                        #         features_ndbi[0][index] = ((SWIR1_dn[index]-NIR_dn[index])/(SWIR1_dn[index]+NIR_dn[index]))
+                        # features_ndbi=features_ndbi.reshape(-1,33,33)
+                        # for index, values in np.ndenumerate(features[3]):
+                        #     values_Red = features[0][index]
+                        #     if values==-9999 or values_Red==-9999:
+                        #         features_ndvi[0][index] = -9999
+                        #     else:
+                        #         features_ndvi[0][index] = ((NIR_dn[index]-RED_dn[index])/(NIR_dn[index]+RED_dn[index]))
+                        # features_ndvi=features_ndvi.reshape(-1,33,33)
+                        features_ndbi = ((SWIR1_dn-NIR_dn)/(SWIR1_dn+NIR_dn)).reshape(-1,33,33)
+                        features_ndvi = ((NIR_dn-RED_dn)/(NIR_dn+RED_dn)).reshape(-1,33,33)
+                        features = np.concatenate([features,features_ndbi,features_ndvi],axis=0)
+                        elevations = elevations_dict[idx].reshape(-1,33,33)
+                        # elevations = elevations_dict[idx].clip(0, 500)
+                        # scaler = MinMaxScaler()
+                        # elevations = np.expand_dims(scaler.fit_transform(elevations), axis=0)
+                        features = np.vstack([features, elevations])
+                        forcing = forcing_data[forcing_date][idx]
+    #                    date_stamp='20'+file_date[:2]+'-'+file_date[2:4]+'-'+file_date[4:6]
+    #                    forcing=forcing_data.sel(time=date_stamp,index=idx).to_array().values      
                         sample = {
                             "__key__": f"{file_date}_{idx}",
                             "image.pyd": features,
