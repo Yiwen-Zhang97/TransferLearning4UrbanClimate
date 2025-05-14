@@ -1,10 +1,10 @@
 import ee
 
-def export_to_drive(img: ee.Image, region: ee.FeatureCollection, radius: int, units: str, scale: float, folder: str, fname: str) -> ee.batch.Task:
+def export_to_drive(img: ee.Image, region: ee.FeatureCollection, radius: int, units: str, scale: float, folder: str, fname: str, description:str) -> ee.batch.Task:
     collection = get_output_samples(img, region, radius, units, scale)
     task = ee.batch.Export.table.toDrive(
             collection=collection,
-            description=fname,
+            description=description,
             folder=folder,
             fileNamePrefix=fname,
             fileFormat='TFRecord')
@@ -109,6 +109,7 @@ def rescale_rename_landsat(img: ee.Image) -> ee.Image:
     landsat_scaled = landsat_scaled.copyProperties(img).set('system:time_start', img.get('system:time_start'))
 
     return landsat_scaled
+
 
 def update_qamask(img: ee.Image) -> ee.Image:
     '''
@@ -288,18 +289,20 @@ def get_pretreated_composite(img_list):
     return update_img
 
 
-def rescale_modis(image):
-    return image.multiply(0.02).copyProperties(image, image.propertyNames())
+def rescale_modis(image,LST_band=['LST_Day_1km'],QC_band=['QC_Day']):
+    lst=image.select(LST_band).multiply(0.02)
+    no_scale=image.select(QC_band)
+    image_new=ee.Image.cat([lst,no_scale])
+    return image_new.copyProperties(image, image.propertyNames())
 
 def clip_collection(image, geometry):
     return image.clip(geometry)
 
-def reproject_collection(image):
-    return image.reproject('EPSG:32612',scale=1000)
+def reproject_collection(image,projection,scale):
+    return image.reproject(projection,scale=scale)
 
-def preprocess_modis(imgCol, start_date: str, end_date: str, geometry: ee.FeatureCollection = None):
+def preprocess_modis(imgCol, start_date: str, end_date: str, geometry: ee.FeatureCollection = None, LST_band=['LST_Day_1km'],QC_band=['QC_Day']):
     filtered_imgCol = filter_collection(imgCol,start_date=start_date, end_date=end_date,geometry=geometry)
-    return filtered_imgCol.select('LST_Day_1km')\
-            .map(rescale_modis)\
-            .map(reproject_collection)\
-            .map(lambda image: clip_collection(image, geometry))
+    return filtered_imgCol\
+            .map(lambda image: clip_collection(image, geometry))\
+            .map(lambda image: rescale_modis(image,LST_band=LST_band, QC_band=QC_band))

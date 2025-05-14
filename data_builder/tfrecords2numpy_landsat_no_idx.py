@@ -19,35 +19,19 @@ class TFRecordsParser:
             self.channels = ['Red', 'Green', 'Blue', "NIR", "SWIR1"]
 
         if self.label is None:
-            self.label = ["LST_Day_1km",'QC_Day']
-#            self.label = "LST_Day_1km"
+            self.label = ['id']
 
     def tfrecrods2numpy(self, clip=True):
         records = []
-        for idx, raw_record in enumerate(self.raw_image_dataset):
+        for _, raw_record in enumerate(self.raw_image_dataset):
             featureset = {}
             example = tf.train.Example()
             example.ParseFromString(raw_record.numpy())
             for feature in self.channels:
                 featureset[feature] = np.array(example.features.feature[feature].float_list.value).reshape(self.image_dim)
-
-#            lst = np.array(example.features.feature[self.label].float_list.value)  
-            lst = np.array(example.features.feature[self.label[0]].float_list.value)
-            QC = np.array(example.features.feature[self.label[1]].float_list.value)
-            if len(lst) == 0: # If LST doens't exist then set to false to filter out later
-                lst = False
-            else:
-                lst = lst[0]
-                
-            if len(QC) == 0: # If QC doens't exist then set to false to filter out later
-                QC = False
-            else:
-                QC = int(QC[0])            
-
-            # Build array out of featureset
+           # Build array out of featureset
             featureset = np.array(list(featureset.values()))
-            records.append((featureset, lst, QC))
-#            records.append((featureset, lst))
+            records.append((featureset))
 
         return records
 
@@ -72,5 +56,5 @@ class TFRecordsElevation:
         return elevations
 
 if __name__ == "__main__":
-    tfe = TFRecordsElevation(filepath="/glade/work/yiwenz/AWS3D30_cropped.tfrecord")
+    tfe = TFRecordsElevation(filepath)
     tfe.tfrecrods2numpy()
